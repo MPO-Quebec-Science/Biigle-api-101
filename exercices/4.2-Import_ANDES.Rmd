@@ -1,0 +1,195 @@
+---
+title: "API BIIGLE - 3"
+author: "David Sean-Fortin"
+date: "2025-01-27"
+output: html_document
+---
+
+```{r echo=TRUE, , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+rm()
+base_url <- "http://INSTANCE_BIIGLE_A_PRENDRE"
+courriel <- "BLABLABLA@dfo-mpo.gc.ca"
+jeton <- "MON_JETON_TOP_SECRET"
+auth <- authenticate(courriel, jeton, type = "basic")
+```
+
+# Manips avancés 2: Importation d'ANDES
+
+Le but est de pouvoir importer des données vennant d'une source externe comme ANDES.
+
+Pour alléger l'excercise, vous pouvez créer un volume (en utilisant l'interface graphique... ou pas!) avec le CSV BIIGLE `mission_andes.csv`
+
+Le CSV contient les colonnes suivantes: `filename`,`aphia_id`,`scientific_name`,`set_number`,`latitude`,`longitude`,`station_name`,`code`.
+BIIGLE devrait automatiquement reconnaitre les champs `filename`, `latitude`, et `longitude`. Cela va créer un volume de 100 images geolocalisé.
+
+Vous devez maintenant ajouter des `image_labels` a toutes les images pour contenir le `scientific_name` et `station_name`.
+
+Il faut avant tout créer un label avec cette structure:
+
+ - `scientific_name`
+   - `Phycis chesteri`
+   - `Myctophiformes (o.)`
+   - `Enchelyopus cimbrius`
+   - `Urophycis tenuis`
+   - etc..
+ - `station_name`
+   - `415-P-19`
+   - `415-P-1`
+   - `415-A-17`
+   - `415-P-14`
+   - etc...
+
+Et ensuite associer les étiquettes aux bonnes images.
+
+### Solution (partie API):
+
+```{r creation_label_tree}
+ajout_au_label_tree <- function(label_tree_id, label_name, parent_label_id) {
+    # https://biigle.de/doc/api/index.html#api-Label_Trees-StoreLabelTreesLabels
+    # POST api/v1/label-trees/:id/labels
+    chemin <- paste("/api/v1/label-trees/", label_tree_id, "/labels", sep = "")
+    cible <- paste(base_url, chemin, sep = "")
+    etiquette <- list(
+        name = label_name,
+        color = "#FF0000",
+        parent_id = parent_label_id
+        )
+    print(sprintf("Ajout de %s a la list %d (parent=%d) ", label_name, label_tree_id, parent_label_id))
+    reponse <- POST(
+        url = cible,
+        body = etiquette,
+        encode = "json",
+        auth)
+}
+
+# j'ai manuellement fait le label tree et les deux parents :Þ
+label_tree_id <- 132
+scientific_name_label_id <- 28308
+station_name_label_id <- 28309
+
+andes_df <- read.csv("mission_andes.csv")
+noms_scientifique <- unique(andes_df["scientific_name"])
+noms_stations <- unique(andes_df["station_name"])
+
+# boucle sur tous les noms_scientifiques
+for (row in 0:nrow(noms_scientifique)) {
+  espece <- noms_scientifique[row, ]
+  ajout_au_label_tree(label_tree_id, espece, scientific_name_label_id)
+}
+
+# boucle sur tous les noms_stations
+for (row in 0:nrow(noms_stations)) {
+  station <- noms_stations[row, ]
+  ajout_au_label_tree(label_tree_id, station, station_name_label_id)
+}
+```
+
+L'API de BIIGLE offre un chemin `POST api/v1/images/:id/labels` qui permet d'associer une étiquette (`label_id`) à une image (`image_id`).
+Nous pouvons l'utiliser pour écrire une fonction `associe_etiquette_a_image(image_id, label_id)`
+
+```{r} 
+associer_etiquette_a_image <- function(image_id, label_id) {
+    # https://biigle.de/doc/api/index.html#api-Images-StoreImageLabels
+    # POST api/v1/images/:id/labels
+    chemin <- paste("/api/v1/images/", image_id, "/labels", sep = "")
+    url_cible <- paste(base_url, chemin, sep = "")
+    etiquette <- list(label_id = label_id)
+    print(sprintf("Ajout de label_id=%s a image_id=%s", label_id, image_id))
+    reponse <- POST(url = url_cible, body = etiquette, encode = "json", auth)
+    code_statut <- status_code(reponse)
+}
+```
+
+Nous vennons de voir la solution qui concerne l'API BIIGLE 
+Avec un dataframe ayant les colonnes suivantes: `image_id`, `scientific_name_label_id`, `station_label_id`, il suffirait de faire une boucle sur les lignes du dataframe pour associer toutes les étiquettes.
+Pour completer l'exercice, il faudrait génerer ce dataframe.
+
+### Solution (partie spaghetti):
+Le but est de construire un dataframe avec les colonnes suivantes: `filename`, `scientific_name`, `station_name`, `image_id`, `scientific_name_label_id`, `station_label_id`.
+
+```{r, spaghetti_dataframe}
+noms_fichiers <- function(volume_id) {
+    # https://biigle.de/doc/api/index.html#api-Volumes-VolumeIndexFilenames
+    # GET api/v1/volumes/:id/filenames
+    chemin <- paste("/api/v1/volumes/", volume_id, "/filenames", sep = "")
+    url_cible <- paste(base_url, chemin, sep = "")
+    reponse <- GET(url = url_cible, accept_json(), auth)
+    resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+    resultat_list <- fromJSON(resultat_txt, flatten = TRUE)
+    # un peu de jonglerie :)
+    resultat_list <- list(
+        filename=unlist(unname(resultat_list)),
+        image_id=names(resultat_list)
+    )
+    resultat_df <- data.frame(resultat_list)
+    return(resultat_df)
+}
+
+obtenir_etiquettes <- function(label_tree_id) {
+  # https://biigle.de/doc/api/index.html#api-Label_Trees-ShowLabelTrees
+  # GET api/v1/label-trees/:id
+  chemin <- paste("/api/v1/label-trees/", label_tree_id, sep = "")
+  url_cible <- paste(base_url, chemin, sep = "")
+  reponse <- GET(url = url_cible, accept_json(), auth)
+  resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+  resultat_df <- fromJSON(resultat_txt, flatten = TRUE)
+  return(resultat_df$labels)
+}
+
+# commencons avec la la source
+andes_df <- read.csv("mission_andes.csv")
+
+# choisir les colonnes qui nous interessent
+df <- andes_df[,
+    colnames(andes_df)=="filename" |
+    colnames(andes_df)=="scientific_name" | 
+    colnames(andes_df)=="station_name"
+    ]
+
+# étape 1, ajout image_id
+volume_id <- 152
+images <- noms_fichiers(volume_id)
+# fusion sur "filename" (facile, car un-pour-un)
+df <- merge(df, images)
+
+# étape 2, ajout scientific_name_label_id et station_label_id
+label_tree_id <- 132 # voir solution précedente
+etiquettes <- obtenir_etiquettes(label_tree_id)
+# choisir les colonnes qui nous interessent
+etiquettes <- etiquettes[,
+    colnames(etiquettes)=="id" |
+    colnames(etiquettes)=="name"
+    ]
+names(etiquettes)[names(etiquettes) == "id"] <- "label_id"
+
+# ajout scientific_name_label_id, re-nommer les colonnes pour faciliter la fusion
+names(etiquettes)[names(etiquettes) == "name"] <- "scientific_name"
+temp <- (merge(df, etiquettes, all.x=TRUE, all.y=FALSE))
+names(temp)[names(temp) == "label_id"] <- "scientific_name_label_id"
+names(etiquettes)[names(etiquettes) == "scientific_name"] <- "name"
+df <- temp
+
+# ajout station_label_id, re-nommer les colonnes pour faciliter la fusion
+names(etiquettes)[names(etiquettes) == "name"] <- "station_name"
+temp <- (merge(df, etiquettes, all.x=TRUE, all.y=FALSE))
+names(temp)[names(temp) == "label_id"] <- "station_label_id"
+names(etiquettes)[names(etiquettes) == "station_name"] <- "name"
+df <- temp
+
+# CQFD!
+View(df)
+```
+
+Pour terminer, il suffit de boucler sur les lignes du dataframe pour associer les étiquettes aux images.
+```{r, finir}
+for (row in seq_len(nrow(df))) {
+  image_id <- df[row, "image_id"]
+  scientific_name_label_id <- df[row, "scientific_name_label_id"]
+  station_label_id <- df[row, "station_label_id"]
+  associer_etiquette_a_image(image_id, scientific_name_label_id)
+  associer_etiquette_a_image(image_id, station_label_id)
+}
+```
