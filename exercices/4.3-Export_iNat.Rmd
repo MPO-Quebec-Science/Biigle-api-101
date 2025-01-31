@@ -1,0 +1,51 @@
+---
+title: "API BIIGLE - 3"
+author: "David Sean-Fortin"
+date: "2025-01-27"
+output: html_document
+---
+
+```{r echo=TRUE, , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+rm()
+base_url <- "http://INSTANCE_BIIGLE_A_PRENDRE"
+courriel <- "BLABLABLA@dfo-mpo.gc.ca"
+jeton <- "MON_JETON_TOP_SECRET"
+auth <- authenticate(courriel, jeton, type = "basic")
+```
+
+# Manips avancés 3: Exportation vers iNat
+
+Le but est de pouvoir exporter des données d'un volume de BIIGLE vers iNaturalist <https://www.inaturalist.org/observations/import#csv_import>
+
+En gros, il faut faire un CSV avec les colonnes suivantes: `Taxon name`, `Date observed`, `Description`, `Place name`, `Latitude`, `Longitude`, `Tags`, `Geoprivacy`
+
+Afin d'alléger cette excercise, nous allons seulement nous pencher sur `Taxon name`, `Latitude`, `Longitude`.
+Nous allons aussi utiliser un volume BIIGLE déja formaté a cette fin.
+
+Les coords (`Latitude`, `Longitude`) seront obnetus à partir des métadonnées des images.
+
+
+### Solution: 
+Les parties pertinentes pour l'API BIIGLE sont les suivantes:
+```{r}
+fichier_metadonnees <- function(volume_id) {
+    # https://biigle.de/doc/api/index.html#api-Volumes-ShowVolumeMetadata
+    # api/v1/volumes/:id/metadata
+    chemin <- paste("/api/v1/volumes/", volume_id, "/metadata", sep = "")
+    url_cible <- paste(base_url, chemin, sep = "")
+    reponse <- GET(url = url_cible, accept_json(), auth)
+    resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+    resultat_csv <- readr::read_csv(resultat_txt)
+    resultat_df <- data.frame(resultat_csv)
+    # aussi possible directement avec content(reponse, type = "text/csv")
+    return(resultat_df)
+}
+volume_id <- MON_VOLUME_ID
+fichier_metadonnees(volume_id)
+
+```
+Il reste a faire l'association des donnees avec les images pour avoir le CSV finale.
+Voir la solution de la section "spaghetti_dataframe" de `4.2-Import_ANDES` pour un exemple.

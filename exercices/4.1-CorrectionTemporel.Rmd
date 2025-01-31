@@ -1,0 +1,69 @@
+---
+title: "API BIIGLE - 3"
+author: "David Sean-Fortin"
+date: "2025-01-27"
+output: html_document
+---
+
+```{r echo=TRUE, , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+rm()
+base_url <- "http://INSTANCE_BIIGLE_A_PRENDRE"
+courriel <- "BLABLABLA@dfo-mpo.gc.ca"
+jeton <- "MON_JETON_TOP_SECRET"
+auth <- authenticate(courriel, jeton, type = "basic")
+```
+
+# Manips avancés 1: Correction temporels
+Il a certains "bogues" dans les annotations d'un vidéo. Le temps (timestamp) d'une annotation n'est pas toujours aligné avec les trames du vidéo.
+L'image *exacte* qui correspond à une annotation (qui ce trouve entre deux trames) est donc abigue.
+
+Il faut corriger ces temps pour qu'ils tombent exactement sur une trame vidéo (selon le débit de la vidéo), et ainsi rendre l'annotation plus précise.
+
+## Tache: Corriger tous les annotations d'un vidéo
+1. (Graphiquement) Ajouter des annotations videos (e.g., a chaque 5 secondes) avec Biigle.
+2. (R) Véfifier le temps de chaque annotation avec l'API.
+3. (R) Corriger le temps de chaque annotation selon le débit (FPS) du vidéo afin qu'ils tombent exactement sur une trame vidéo (frame).
+
+N.B., L'attribute `frames` d'une annotation designe bien le *temps* (en secondes) et non la *trame*.
+
+```{r}
+
+annotations_du_video <- function(video_id) {
+    # à remplir...
+}
+
+corrige_temp <- function(annotation_id, video_fps) {
+    # à remplir...
+}
+```
+### Solution:
+
+```{r}
+annotations_du_video <- function (video_id){
+    # https://biigle.de/doc/api/index.html#api-Videos-IndexVideoAnnotations
+    # GET api/v1/videos/:id/annotations
+
+    chemin <- paste("/api/v1/videos/", video_id, "/annotations", sep = "")
+    url_cible <- paste(base_url, chemin, sep = "")
+    reponse <- GET(url = url_cible, accept_json(), auth)
+    resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+    resultat_df <- fromJSON(resultat_txt, flatten = TRUE)
+    # conserver uniquement les colonnes 'frames', 'points'
+    resultat_df <- resultat_df[,
+        colnames(resultat_df)=="frames" |
+        colnames(resultat_df)=="points"
+    ]
+    return(resultat_df)
+}
+
+video_id <- 307
+# la video a un débit de 5 FPS, donc t = 0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, etc...
+annotations <- annotations_du_video(video_id)
+# la colonne `frames` designe bien le *temps* (en secondes) et non la *trame*.
+View(annotations)
+```
+
+J'ai écris et publié la solution complete en python sur <https://github.com/MPO-Quebec-Science/biigle-community-resources/blob/feature/snap_annotations/snap_annotations/snap_annotations.py>
