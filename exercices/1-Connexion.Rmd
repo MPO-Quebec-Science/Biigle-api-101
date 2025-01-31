@@ -1,0 +1,176 @@
+---
+title: "API BIIGLE - 1"
+author: "David Sean-Fortin"
+date: "2025-01-27"
+output: html_document
+---
+
+```{r echo=TRUE, , include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Utiliser l'API REST de BIIGLE
+
+Un `API` est une porte qui permet d'interagir avec un application par un interface de programmation. Contrairement à un interface graphique (qui est fait pour être utiliser par un humain), une API est un interface conçu pour être utilisé par d'autres applications.
+
+Un `API REST`, est un API qui utilise des requêtes web comme lien d'interactions entre applications. Derrières plusieurs applications web modernes ce cache un API-REST permettant d'interagir avec application en utilisant un langage de programmation.
+
+## Exemple: voir vos projets BIIGLE (avec fureteur)
+
+Avec l'interface graphique, il suffit de naviguer vers <http://iml-science-1.ent.dfo-mpo.ca:8888/search?t=projects> pour voir les projets accessible par ton utilisateur.
+
+Nous pouvons faire la même chose en utilisant l'API au lien suivant (essayez le!) <http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects>.
+
+Le lien est composé de deux parties **l'hôte** (`http://iml-science-1.ent.dfo-mpo.ca:8888/`) suivi du **chemin** (`api/v1/projects`).
+
+Nous allons utiliser l'hôte du déploiement BIIGLE au MPO (`http://iml-science-1.ent.dfo-mpo.ca:8888/`), mais il est possible de prendre le déploiement officiel `biigle.de`. Le chemin (`api/v1/projects`) détermine la ressource qui est concerné, dans l'exemple nous voulons obtenir la liste de projets en utilisant la version 1 de l'API.
+
+La réponse du site web est visuellement TRES différent entre les deux liens. Mais l'information est essentiellement le même. Dans le premier cas, la réponse est graphiquement accueillante pour un interaction avec un être humain tandis que la deuxième version (la version de l'API) est plus apte à être utilisé avec un script.
+
+Il faut consulter la [https://biigle.de/doc/api/index.html](documentation%20de%20l'API%20de%20Biigle) pour voir tous les chemins qui sont disponible par l'API de BIIGLE.
+
+## Exemple: voir vos projets BIIGLE (avec R)
+
+Nous avons l'habitude de faire des requêtes web en utilisant un fureteur web (e.g., Chrome/Edge/Firefox/Safari). Nous avons essayé l'API REST de BIIGLE avec un fureteur web, mais le but est de pouvoir utiliser un langage de programmation. Avec R, il existe certain packages pour nous aider.
+
+### packages
+
+Le package `httr` permet de faire des requêtes web directement sur R. Il pourrait aussi être possible d'utiliser le package un peu plus moderne tel que `httr2`.
+La plupart des transactions web utilise le format JSON pour échanger des données. Le package `jsonlite` est utile pour convertir des données en format JSON.
+
+```{r install, include=FALSE}
+
+install.packages("httr")
+install.packages("jsonlite")
+```
+
+```{r library}
+library(httr)
+library(jsonlite)
+```
+
+Nous pouvons maintenant essayer de faire une requête (avec la méthode `httr::GET()`).
+
+```{r message=FALSE, warning=FALSE}
+reponse <- GET(
+  url = "http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects/",
+  accept_json()
+  )
+```
+
+Il faut regarder le code (avec `httr::status_code()`) pour voir si ça marche ainsi que le corps de la réponse (avec `httr::content()`)
+
+```{r }
+status_code(reponse)
+content(reponse)
+```
+
+Un code de 401 indique un problème de droits ou d'authentification, voir [https://fr.wikipedia.org/wiki/Liste_des_codes_HTTP](une%20list%20de%20codes%20et%20leur%20d/finitions) pour la liste de codes.
+
+### Authentification
+
+Il faut dire **qui** nous sommes à l'API pour avoir le droit d'accéder a certaines ressources. Il faut lui donner un nom d'utilisateur et un jeton (qui joue le rôle d'un mot de passe pour d'API).
+
+ajoutez un jetons ici:
+-   version publique <https://biigle.de/settings/tokens>
+-   version MPO  <http://iml-science-1.ent.dfo-mpo.ca:8888/settings/tokens>
+
+Avec le jeton, vous pouvez vous authentifier en utilisant la fonction `httr::authenticate()`
+
+```{r jeton}
+# courriel de ton utilisateur BIIGLE
+courriel <- "BLABLABLA@dfo-mpo.gc.ca"
+# jeton (Token), il faut en créer un https://biigle.de/settings/tokens
+jeton <- "MON_JETON_TOP_SECRET"
+auth <- authenticate(courriel, jeton, type = "basic")
+```
+
+Il faut ajouter l'objet `auth` aux requêtes pour en faire des requêtes authentifié.
+```{r auth}
+reponse <- GET(
+  url = "http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects",
+  accept_json(),
+  auth
+  )
+status_code(reponse)
+content(reponse)
+```
+
+C'est pratique de construire l'URL comme ceci:
+```{r}
+base_url <- "http://iml-science-1.ent.dfo-mpo.ca:8888"
+chemin <- "/api/v1/projects"
+url_cible <- paste(base_url, chemin, sep = '')
+reponse <- GET(url = url_cible, accept_json(), auth)
+```
+
+### Nettoyage
+
+Il est souvent pratique de convertir le résultat en dataframe. Pour ce faire, nous interprétons le résultat comme texte avec une structure JSON et ensuite en dataframe.
+
+```{r txt_json_df}
+resultat <- content(reponse)
+resultat_txt <- content(
+  reponse,
+  as = "text",
+  encoding = "UTF-8"
+  )
+resultat_df1 <- fromJSON(resultat_txt, flatten = TRUE)
+View(resultat_df1)
+```
+
+
+Nous pouvons aussi faire tout ça directement avec `content()`
+```{r df}
+
+## Not run: 
+resultat <- content(reponse)
+resultat_df2 <- content(
+  reponse,
+  as = "parsed",
+  type = "application/json",
+  flatten = TRUE,
+  simplifyVector = TRUE
+  )
+View(resultat_df1)
+```
+
+# Conclusion
+
+Certains "sites" web (un API REST) ont été conçu pour être utilisé par un programme. Un jeton permet de faire une des requêtes authentifié. Nous pouvons maintenant faire une requête authentifié avec R en utilisant la méthode GET, et transformer les résultats en dataframe.
+
+Dans la prochaine section, on va explore les autres méthodes http.
+
+# Exercise
+
+## Tache: Volumes en CSV
+
+En utilisant l'API de BIIGLE, vous devez écrire une fonction qui obtient tous volumes disponible à ton utilisateur afin de pouvoir les sauvegarder en CSV.
+
+### Solution
+
+```{r solution,}
+volumes_disponible <- function() {
+  # https://biigle.de/doc/api/index.html#api-Projects-IndexProjects
+  # GET api/v1/projects
+  chemin <- "/api/v1/projects"
+  url_cible <- paste(base_url, chemin, sep = "")
+  reponse <- GET(url = url_cible, accept_json(), auth)
+  resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+  resultat_df <- fromJSON(resultat_txt, flatten = TRUE)
+  return(resultat_df)
+}
+
+library(httr)
+library(jsonlite)
+
+base_url <- "http://iml-science-1.ent.dfo-mpo.ca:8888"
+courriel <- "BLABLABLA@dfo-mpo.gc.ca"
+jeton <- "MON_JETON_TOP_SECRET"
+auth <- authenticate(courriel, jeton, type = "basic")
+
+volumes <- volumes_disponible()
+View(volumes)
+write.csv(volumes, "volumes.csv")
+```
+

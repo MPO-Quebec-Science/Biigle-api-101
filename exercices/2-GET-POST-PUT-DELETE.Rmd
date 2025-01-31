@@ -1,0 +1,137 @@
+---
+title: "API BIIGLE - 2"
+author: "David Sean-Fortin"
+date: "2025-01-27"
+output: html_document
+---
+
+```{r, echo=TRUE, include=FALSE}
+opts_chunk$set(echo = TRUE)
+library(httr)
+library(jsonlite)
+rm()
+base_url <- "http://INSTANCE_BIIGLE_A_PRENDRE"
+courriel <- "BLABLABLA@dfo-mpo.gc.ca"
+jeton <- "MON_JETON_TOP_SECRET"
+auth <- authenticate(courriel, jeton, type = "basic")
+```
+
+# Les méthodes http: GET / POST / PUT / DELETE
+
+Nous savons maintenant comment obtenir certains données en utilisant l'API de BIIGLE.
+
+Afin de d'utiliser l'API a son plein poentiel, il faut explorer les autres méthodes http: `POST`, `PUT` et `DELETE`.
+
+<https://biigle.de/doc/api/index.html>
+
+## GET et DELETE
+Le méthode `GET` est généralement utilisé pour **obtenir** des données.
+
+Avec cette méthode, il suffit de construire un URL avec un bon chemin.
+Le chemin `api/v1/projects` était utilisé obtenir tous les projets.
+
+Les ID sont souvent dans le chemin lui-même, par exemple le chemin `api/v1/volumes/137` est utilisé pour obtenir de l'info sur le volume ayant `volume_ID=137`: <http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/volumes/137>.
+
+Le méthode `DELETE` est généralement utiliser pour **supprimer** des données. Elle fonctionne aussi avec un chemin similaire à `GET'.
+
+Pour supprimer un projet ayant `project_id=123456`, il faut construire le url complet `http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects/123456` et y accéder avec la méthode `DELETE()`.
+
+```{r}
+id <- 123456
+chemin <- paste("/api/v1/projects/", id, sep = "")
+url_cible <- paste(base_url, chemin, sep = "")
+# ETES VOUS CERTAIN !?
+reponse <- DELETE(url = url_cible, accept_json(), auth)
+```
+
+exemples de chemins à construire:
+- `GET`/`DELETE` `api/v1/users/:id`
+- `GET`/`DELETE` `api/v1/projects/:id`
+- `GET`/`DELETE` `api/v1/volumes/:id`
+- `GET`/`DELETE` `api/v1/images/:id`
+- `GET`/`DELETE` `api/v1/videos/:id`
+- `GET`/`DELETE` `api/v1/label-trees/:id`
+- `GET`/`DELETE` `api/v1/image-annotations/:id`
+
+## POST et PUT
+Généralement, `POST` est utilisé pour créer une nouvelle entité et `PUT` est pour modifier une entité existante.
+Comme avec `GET` et `DELETE`, un chemin est construit pour définir la ressource/l'entité.
+
+Mais il faut AUSSI envoyer de l'information supplémentaire (le corps de la requête)
+
+### Exemple (POST): création d'un nouveau projet
+
+https://biigle.de/doc/api/index.html#api-Projects-StoreProjects
+
+Il faut cibler le chemin `api/v1/projects` et aussi inclure des données (nom et description du projet).
+Les données doivent être dans le format JSON.
+
+```{r data_json}
+proj <- list(
+  name = "mon nouveau projet!",
+  description = "Créer avec R"
+)
+proj_json <- toJSON(proj) # juste pour voir, nous n'allons pas prendre cette objet
+```
+
+Il reste à envoyer cette objet avec la requête (avec l'option `body=...`). 
+Nous pouvons utiliser l'option `encode = "json"` pour automatiquement le convertir.
+```{r post}
+chemin <- "/api/v1/projects"
+url_cible <- paste(base_url, chemin, sep = "")
+reponse <- POST(url = url_cible, body = proj, encode = "json", auth)
+code_statut <- status_code(reponse)
+resultat <- content(reponse)
+View(resultat)
+proj_id <- resultat$id
+```
+Notez que le POST retourn le projet.
+
+### Exemple (PUT): modifier un projet existant
+Nous pouvons changer certains parties avec `PUT`
+```{r data_json}
+proj <- list(description = "... et même modifié avec R!!")
+```
+L'objet `proj` contient maintenant seulement la description (incomplet).
+```{r put}
+chemin <- paste("/api/v1/projects/", proj_id, sep = "")
+url_cible <- paste(base_url, chemin, sep = "")
+reponse <- PUT(url = url_cible, body = proj, encode = "json", auth)
+code_statut <- status_code(reponse)
+resultat <- content(reponse)
+```
+
+# Exercise
+
+## Tache: Réorganisation
+
+Après une réorganisation de dossiers d'imagerie, tu dois mettre a jour les volumes BIIGLE pour qu'ils pointent vers le nouvel emplacement.
+Les photos ont tous déja été déplacées, il reste à mettre à jour les volumes BIIGLE avec un script.
+
+Écrivez une fonction `changer_source_volume(volume_id, nouvelle_emplacement)` qui prend un ID de volume et un nouvel emplacement et met à jour le volume.
+
+```{r}
+changer_source_volume <- function(volume_id, nouvelle_emplacement) {
+ # code à remplir ici
+}
+
+changer_source_volume(volume_id = 1234567890, nouvelle_emplacement = "http://mon-nas.ent-mpo.ca/images/missions")
+```
+
+### Solution
+
+```{r}
+changer_source_volume <- function(volume_id, nouvelle_emplacement) {
+  # https://biigle.de/doc/api/index.html#api-Volumes-UpdateVolumes
+  # PUT api/v1/volumes/:id
+  chemin <- paste("/api/v1/volumes/", volume_id, sep = "")
+  url_cible <- paste(base_url, chemin, sep = "")
+  payload <- list(url = nouvelle_emplacement)
+  reponse <- PUT(url = url_cible, body = payload, encode = "json", auth)
+  code_statut <- status_code(reponse)
+}
+
+changer_source_volume(
+  volume_id = 1234567890,
+  nouvelle_emplacement = "http://mon-nas.ent-mpo.ca/images/missions")
+```
