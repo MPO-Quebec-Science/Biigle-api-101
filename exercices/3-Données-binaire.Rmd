@@ -26,13 +26,13 @@ Mais il est aussi possible de télécharger des fichiers (photos, vidéos, etc.)
 L'API défini le chemin `api/v1/images/:id/file` pour obtenir le fichier d'une image:
 
 ```{r}
-url_cible <-"http://biigle-101.ent.dfo-mpo.ca/api/v1/images/142431/file"
+url_cible <-"http://biigle-101.ent.dfo-mpo.ca/api/v1/images/150838/file"
 reponse <- GET(url=url_cible, auth)
 ```
 
 Si nous regardons la réponse à la requête, nous voyons que le contenu est en format binaire.
 ```
-Response [http://stockage-vroy.ent.dfo-mpo.ca/BIIGLE/EGSL-Gasp%c3%a9sie-Concombres/IML-2024-058/IML-2024-058_001_0787.jpg]
+Response [http://stockage-vroy.ent.dfo-mpo.ca/BIIGLE/Arctic-West-CBSMEA/CBS-MEA-2021/W2A330a.jpg]
   Date: 2025-01-29 18:48
   Status: 200
   Content-Type: image/jpeg
@@ -55,7 +55,7 @@ Nous pouvons aussi simplement prendre le contenu binaire et le placer dans un fi
 L'option `type='raw'` indique que le contenu sera extrait de façon brut (sans lui assigner une interprétation quelconque ).
 
 ```{r, image_fichier}
-nom_fichier <- "IML-2024-058_001_0787.jpg"
+nom_fichier <- "une_image.jpg"
 fichier <- file(nom_fichier, open = "wb")
 writeBin((content(reponse, type = "raw")), fichier)
 close(fichier)
@@ -65,9 +65,9 @@ close(fichier)
 Pour les vidéos, l'API défini un chemin similaire aux images, `api/v1/videos/:id/file`.
 
 ```{r}
-url_cible <- "http://biigle-101.ent.dfo-mpo.ca/api/v1/videos/309/file"
+url_cible <- "http://biigle-101.ent.dfo-mpo.ca/api/v1/videos/320/file"
 reponse <- GET(url = url_cible, auth)
-nom_fichier <- "telecharger_video.mp4"
+nom_fichier <- "un_video.mp4"
 fichier <- file(nom_fichier, open = "wb")
 writeBin((content(reponse, type = "raw")), fichier)
 close(fichier)
