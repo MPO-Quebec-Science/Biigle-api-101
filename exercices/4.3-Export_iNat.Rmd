@@ -16,7 +16,7 @@ jeton <- "MON_JETON_TOP_SECRET"
 auth <- authenticate(courriel, jeton, type = "basic")
 ```
 
-# Manips avancés 3: Exportation vers iNat
+# Manips pratiques 3: Exportation vers iNat
 
 Le but est de pouvoir exporter des données d'un volume de BIIGLE vers iNaturalist <https://www.inaturalist.org/observations/import#csv_import>
 

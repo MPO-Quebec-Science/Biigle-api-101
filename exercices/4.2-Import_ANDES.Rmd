@@ -16,7 +16,7 @@ jeton <- "MON_JETON_TOP_SECRET"
 auth <- authenticate(courriel, jeton, type = "basic")
 ```
 
-# Manips avancés 2: Importation d'ANDES
+# Manips pratiques 2: Importation d'ANDES
 
 Le but est de pouvoir importer des données vennant d'une source externe comme ANDES.
 

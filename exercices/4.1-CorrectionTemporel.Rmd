@@ -16,7 +16,7 @@ jeton <- "MON_JETON_TOP_SECRET"
 auth <- authenticate(courriel, jeton, type = "basic")
 ```
 
-# Manips avancés 1: Correction temporels
+# Manips pratiques 1: Correction temporels
 Il a certains "bogues" dans les annotations d'un vidéo. Le temps (timestamp) d'une annotation n'est pas toujours aligné avec les trames du vidéo.
 L'image *exacte* qui correspond à une annotation (qui ce trouve entre deux trames) est donc abigue.
 

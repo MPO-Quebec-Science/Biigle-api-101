@@ -13,7 +13,7 @@ Plan :
  3. Données binaires
    - exercice : télécharger tous les images d'un volume
    
- 4. Exercice avancés
+ 4. Exemples pratiques
    - exercice : corriger le timestamp d'une annotation vidéo 
    - exercice : importations d'un CSV ANDES 
    - exercice : exportation vers un CSV pour iNaturaliste 
