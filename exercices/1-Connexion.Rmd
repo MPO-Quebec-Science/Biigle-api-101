@@ -17,13 +17,13 @@ Un `API REST`, est un API qui utilise des requêtes web comme lien d'interaction
 
 ## Exemple: voir vos projets BIIGLE (avec fureteur)
 
-Avec l'interface graphique, il suffit de naviguer vers <http://iml-science-1.ent.dfo-mpo.ca:8888/search?t=projects> pour voir les projets accessible par ton utilisateur.
+Avec l'interface graphique, il suffit de naviguer vers <http://biigle-101.ent.dfo-mpo.ca/search?t=projects> pour voir les projets accessible par ton utilisateur.
 
-Nous pouvons faire la même chose en utilisant l'API au lien suivant (essayez le!) <http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects>.
+Nous pouvons faire la même chose en utilisant l'API au lien suivant (essayez le!) <http://biigle-101.ent.dfo-mpo.ca/api/v1/projects>.
 
-Le lien est composé de deux parties **l'hôte** (`http://iml-science-1.ent.dfo-mpo.ca:8888/`) suivi du **chemin** (`api/v1/projects`).
+Le lien est composé de deux parties **l'hôte** (`http://biigle-101.ent.dfo-mpo.ca/`) suivi du **chemin** (`api/v1/projects`).
 
-Nous allons utiliser l'hôte du déploiement BIIGLE au MPO (`http://iml-science-1.ent.dfo-mpo.ca:8888/`), mais il est possible de prendre le déploiement officiel `biigle.de`. Le chemin (`api/v1/projects`) détermine la ressource qui est concerné, dans l'exemple nous voulons obtenir la liste de projets en utilisant la version 1 de l'API.
+Nous allons utiliser l'hôte du déploiement BIIGLE au MPO (`http://biigle-101.ent.dfo-mpo.ca/`), mais il est possible de prendre le déploiement officiel `biigle.de`. Le chemin (`api/v1/projects`) détermine la ressource qui est concerné, dans l'exemple nous voulons obtenir la liste de projets en utilisant la version 1 de l'API.
 
 La réponse du site web est visuellement TRES différent entre les deux liens. Mais l'information est essentiellement le même. Dans le premier cas, la réponse est graphiquement accueillante pour un interaction avec un être humain tandis que la deuxième version (la version de l'API) est plus apte à être utilisé avec un script.
 
@@ -53,7 +53,7 @@ Nous pouvons maintenant essayer de faire une requête (avec la méthode `httr::G
 
 ```{r message=FALSE, warning=FALSE}
 reponse <- GET(
-  url = "http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects/",
+  url = "http://biigle-101.ent.dfo-mpo.ca/api/v1/projects/",
   accept_json()
   )
 ```
@@ -74,6 +74,7 @@ Il faut dire **qui** nous sommes à l'API pour avoir le droit d'accéder a certa
 ajoutez un jetons ici:
 -   version publique <https://biigle.de/settings/tokens>
 -   version MPO  <http://iml-science-1.ent.dfo-mpo.ca:8888/settings/tokens>
+-   version Atelier <http://biigle-101.ent.dfo-mpo.ca/settings/tokens>
 
 Avec le jeton, vous pouvez vous authentifier en utilisant la fonction `httr::authenticate()`
 
@@ -88,7 +89,7 @@ auth <- authenticate(courriel, jeton, type = "basic")
 Il faut ajouter l'objet `auth` aux requêtes pour en faire des requêtes authentifié.
 ```{r auth}
 reponse <- GET(
-  url = "http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects",
+  url = "http://biigle-101.ent.dfo-mpo.ca/api/v1/projects",
   accept_json(),
   auth
   )
@@ -98,7 +99,7 @@ content(reponse)
 
 C'est pratique de construire l'URL comme ceci:
 ```{r}
-base_url <- "http://iml-science-1.ent.dfo-mpo.ca:8888"
+base_url <- "http://biigle-101.ent.dfo-mpo.ca"
 chemin <- "/api/v1/projects"
 url_cible <- paste(base_url, chemin, sep = '')
 reponse <- GET(url = url_cible, accept_json(), auth)
@@ -164,7 +165,7 @@ volumes_disponible <- function() {
 library(httr)
 library(jsonlite)
 
-base_url <- "http://iml-science-1.ent.dfo-mpo.ca:8888"
+base_url <- "http://biigle-101.ent.dfo-mpo.ca"
 courriel <- "BLABLABLA@dfo-mpo.gc.ca"
 jeton <- "MON_JETON_TOP_SECRET"
 auth <- authenticate(courriel, jeton, type = "basic")

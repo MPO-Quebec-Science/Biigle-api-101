@@ -10,7 +10,7 @@ opts_chunk$set(echo = TRUE)
 library(httr)
 library(jsonlite)
 rm()
-base_url <- "http://INSTANCE_BIIGLE_A_PRENDRE"
+base_url <- "http://biigle-101.ent.dfo-mpo.ca"
 courriel <- "BLABLABLA@dfo-mpo.gc.ca"
 jeton <- "MON_JETON_TOP_SECRET"
 auth <- authenticate(courriel, jeton, type = "basic")
@@ -30,14 +30,14 @@ Le méthode `GET` est généralement utilisé pour **obtenir** des données.
 Avec cette méthode, il suffit de construire un URL avec un bon chemin.
 Le chemin `api/v1/projects` était utilisé obtenir tous les projets.
 
-Les ID sont souvent dans le chemin lui-même, par exemple le chemin `api/v1/volumes/137` est utilisé pour obtenir de l'info sur le volume ayant `volume_ID=137`: <http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/volumes/137>.
+Les ID sont souvent dans le chemin lui-même, par exemple le chemin `api/v1/volumes/40` est utilisé pour obtenir de l'info sur le volume ayant `volume_ID=40`: <http://biigle-101.ent.dfo-mpo.ca/api/v1/volumes/40>.
 
 Le méthode `DELETE` est généralement utiliser pour **supprimer** des données. Elle fonctionne aussi avec un chemin similaire à `GET'.
 
-Pour supprimer un projet ayant `project_id=123456`, il faut construire le url complet `http://iml-science-1.ent.dfo-mpo.ca:8888/api/v1/projects/123456` et y accéder avec la méthode `DELETE()`.
+Pour supprimer un projet ayant `project_id=1234567890`, il faut construire le url complet `http://biigle-101.ent.dfo-mpo.ca/api/v1/projects/1234567890` et y accéder avec la méthode `DELETE()`.
 
 ```{r}
-id <- 123456
+id <- 1234567890
 chemin <- paste("/api/v1/projects/", id, sep = "")
 url_cible <- paste(base_url, chemin, sep = "")
 # ETES VOUS CERTAIN !?

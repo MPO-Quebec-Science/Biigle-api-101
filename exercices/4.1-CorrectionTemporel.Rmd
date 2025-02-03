@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(httr)
 library(jsonlite)
 rm()
-base_url <- "http://INSTANCE_BIIGLE_A_PRENDRE"
+base_url <- "http://biigle-101.ent.dfo-mpo.ca"
 courriel <- "BLABLABLA@dfo-mpo.gc.ca"
 jeton <- "MON_JETON_TOP_SECRET"
 auth <- authenticate(courriel, jeton, type = "basic")

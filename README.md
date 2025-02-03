@@ -1,5 +1,7 @@
 # biigleR
-Exemples d'utilisation de l'API Biigle avec R
+Exemples d'utilisation de l'API Biigle avec R.
+
+Version biigle SANS DANGER: [http://biigle-101.ent.dfo-mpo.ca/](http://biigle-101.ent.dfo-mpo.ca/)
 
 Plan :
  1. C'est quoi un API? Connexion, jeton.  
