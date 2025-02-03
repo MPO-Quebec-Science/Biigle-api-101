@@ -123,8 +123,6 @@ View(resultat_df1)
 
 Nous pouvons aussi faire tout ça directement avec `content()`
 ```{r df}
-
-## Not run: 
 resultat <- content(reponse)
 resultat_df2 <- content(
   reponse,
