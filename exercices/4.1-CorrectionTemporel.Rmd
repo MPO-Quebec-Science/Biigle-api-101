@@ -30,18 +30,29 @@ Il faut corriger ces temps pour qu'ils tombent exactement sur une trame vidéo (
 N.B., L'attribute `frames` d'une annotation designe bien le *temps* (en secondes) et non la *trame*.
 
 ```{r}
+#' Arrondir vers la trame précédente
+#' 
+#' Arrondi un temps pour qu'il tombe exactement sur une trame vidéo.
+#' Ce choix correction est arbitraire et ne garantie pas que l'annotation est plus précise.
+temps_sur_trame <- function(temps, video_fps){
+    frame <- temps*video_fps
+    snapped_timestamp = as.integer(frame)/video_fps
+    return(snapped_timestamp)
+}
 
 annotations_du_video <- function(video_id) {
     # à remplir...
+    # retourne un dataframe d'annotations vidéo ayant les colones "id", "frames", "points"
 }
 
-corrige_temp <- function(annotation_id, video_fps) {
-    # à remplir...
+modif_annotation <- function(annotation_id, new_frames, new_points){
+    # à remplir
+    # modifie une annotation avec des nouveau temps et meme points
 }
 ```
 ### Solution:
 
-```{r}
+```{r solution}
 annotations_du_video <- function (video_id){
     # https://biigle.de/doc/api/index.html#api-Videos-IndexVideoAnnotations
     # GET api/v1/videos/:id/annotations
@@ -54,16 +65,48 @@ annotations_du_video <- function (video_id){
     # conserver uniquement les colonnes 'frames', 'points'
     resultat_df <- resultat_df[,
         colnames(resultat_df)=="frames" |
-        colnames(resultat_df)=="points"
+        colnames(resultat_df)=="points" |
+        colnames(resultat_df)=="id" 
     ]
     return(resultat_df)
 }
 
+
+modif_annotation <- function(annotation_id, new_frames, new_points){
+    # https://biigle.de/doc/api/index.html#api-VideoAnnotations-UpdateVideoAnnotation
+    # PUT api/v1/video-annotations/:id
+    payload = list(
+        "frames"= new_frames,
+        "points"= new_points
+    )
+    
+    chemin <- paste("/api/v1/video-annotations/", annotation_id, sep = "")
+    url_cible <- paste(base_url, chemin, sep = "")
+    reponse <- PUT(url = url_cible, body = payload, encode = "json", auth)
+    code_statut <- status_code(reponse)
+    print(reponse)
+}
+
+
+
 video_id <- 307
+video_fps <- 5
+
 # la video a un débit de 5 FPS, donc t = 0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, etc...
 annotations <- annotations_du_video(video_id)
 # la colonne `frames` designe bien le *temps* (en secondes) et non la *trame*.
 View(annotations)
+
+# applique la correction temps_sur_trame() à chaque annotation
+annotations$frames <- lapply(annotations$frames, function(x) temps_sur_trame(x, video_fps))
+
+# boucle sur tous les annotations pour les mettre a jour
+for (row in seq_len(nrow(mes_images))) {
+  annotation_id <- annotations[row, "id"]
+  annotation_frames <- unlist(annotations[row, "frames"])
+  annotation_points <- list(unlist(annotations[row, "points"]))
+  modif_annotation(annotation_id, annotation_frames, annotation_points)
+}
 ```
 
 J'ai écris et publié la solution complete en python sur <https://github.com/MPO-Quebec-Science/biigle-community-resources/blob/feature/snap_annotations/snap_annotations/snap_annotations.py>
