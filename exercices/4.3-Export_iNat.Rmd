@@ -86,5 +86,56 @@ View(mes_images)
 ## Taxon name
 
 Il reste a faire l'association des données avec les images pour avoir le CSV finale.
-Voir la solution de la section "spaghetti_dataframe" de `4.2-Import_ANDES` pour un exemple.
+Voir la solution de la section "spaghetti_dataframe" de `4.2-Import_ANDES` pour un autre exemple.
+
+```{r taxon_name}
+annotations_de_image <- function(image_id) {
+  # https://biigle.de/doc/api/index.html#api-Images-IndexImageAnnotations
+  # GET api/v1/images/:id/annotations
+  chemin <- paste("/api/v1/images/", image_id, "/annotations", sep = "")
+  url_cible <- paste(base_url, chemin, sep = "")
+  msg <- sprintf("obtenir les annotations de l'image %d ...", image_id)
+  print(msg)
+  reponse <- GET(url = url_cible, auth)
+  resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+  resultat_df <- fromJSON(resultat_txt, flatten = TRUE)
+  resultat_df <- data.frame(resultat_df)
+  return(resultat_df)
+}
+
+# filtrer sur label_tree_id ?
+label_tree_id <- 123
+
+# construire une list d'images et taxons selon les annotations
+annotations <- NULL
+for (row in seq_len(nrow(mes_images))) {
+  image_id <- mes_images[row, "image_id"]
+  annotations_image <- annotations_de_image(image_id)
+  if (length(annotations_image)>0) {
+    mes_labels <- annotations_image$labels
+    labels_df <- do.call(rbind.data.frame, mes_labels)
+    # filtre optionel, seulement choisir vennant d'un label_tree_id spéfifique
+    labels_df <- labels_df[labels_df[,"label.label_tree_id"]==label_tree_id,]
+    taxons <- labels_df[, "label.name"]
+    image_id <- rep(image_id, length(taxons))
+    elem <- cbind(taxons, image_id)
+    # ajout a la liste
+    annotations <- rbind(annotations, elem)
+  }
+}
+annotations <- as.data.frame(annotations)
+View(annotations)
+```
+
+## Finalisation
+Il reste a fusionner les deux dataframes (`mes_images` et `annotations`). 
+```{r finalisation}
+View(mes_images)
+View(annotations)
+
+export_iNat <- merge(mes_images, annotations, all.x=FALSE, all.y=TRUE)
+View(export_iNat)
+write.csv(export_iNat, "export_iNaturalist.csv")
+```
+Nous pouvons retirer la colonne `image_id`, et remplir les champs `Date observed`, `Description`, `Place name`, `Tags`, `Geoprivacy`.
 
