@@ -84,7 +84,6 @@ Vous devez télécharger tous les images d'un volume donné par son volume_id, e
 list_images <- function(volume_id){
     # https://biigle.de/doc/api/index.html#api-Volumes-IndexVolumeFiles
     # GET api/v1/volumes/:id/files
-    base_url <- "http://biigle-101.ent.dfo-mpo.ca"
     chemin <- paste("/api/v1/volumes/", volume_id, "/files", sep = "")
     url_cible <- paste(base_url, chemin, sep = "")
     reponse <- GET(url = url_cible, accept_json(), auth)
@@ -98,7 +97,6 @@ list_images <- function(volume_id){
 telecharge_image <- function(image_id) {
   # https://biigle.de/doc/api/index.html#api-Images-ShowImageFiles
   # GET api/v1/images/:id/file
-  base_url <- "http://biigle-101.ent.dfo-mpo.ca"
   chemin <- paste("/api/v1/images/", image_id, "/file", sep = "")
   url_cible <- paste(base_url, chemin, sep = "")
   reponse <- GET(url = url_cible, auth)
