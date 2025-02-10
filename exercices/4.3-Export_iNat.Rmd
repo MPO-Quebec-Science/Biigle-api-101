@@ -13,6 +13,11 @@ rm()
 base_url <- "http://biigle-101.ent.dfo-mpo.ca"
 courriel <- "BLABLABLA@dfo-mpo.gc.ca"
 jeton <- "MON_JETON_TOP_SECRET"
+
+base_url <- "http://iml-science-1.ent.dfo-mpo.ca:8888"
+courriel <- "dfo.donotreply-nepasrepondre.mpo@dfo-mpo.gc.ca"
+jeton <- "FlXCOwilgW9RR9NqcdPi4O8Pa3lwi7Bn"
+
 auth <- authenticate(courriel, jeton, type = "basic")
 ```
 
@@ -25,12 +30,14 @@ En gros, il faut faire un CSV avec les colonnes suivantes: `Taxon name`, `Date o
 Afin d'alléger cette excercise, nous allons seulement nous pencher sur `Taxon name`, `Latitude`, `Longitude`.
 Nous allons aussi utiliser un volume BIIGLE déja formaté a cette fin.
 
-Les coords (`Latitude`, `Longitude`) seront obnetus à partir des métadonnées des images.
-
+ - Les coordonnéess (`Latitude`, `Longitude`) seront obtenus à partir des métadonnées des images (file metadata).
+ - Les valeurs pour le champ `Taxon name` seront obtenus des annotations.
 
 ### Solution: 
 Les parties pertinentes pour l'API BIIGLE sont les suivantes:
-```{r}
+## Latitude et Longitude
+
+```{r coords}
 fichier_metadonnees <- function(volume_id) {
     # https://biigle.de/doc/api/index.html#api-Volumes-ShowVolumeMetadata
     # api/v1/volumes/:id/metadata
@@ -43,9 +50,41 @@ fichier_metadonnees <- function(volume_id) {
     # aussi possible directement avec content(reponse, type = "text/csv")
     return(resultat_df)
 }
-volume_id <- MON_VOLUME_ID
-fichier_metadonnees(volume_id)
 
+list_image_filenames <- function(volume_id){
+    # https://biigle.de/doc/api/index.html#api-Volumes-IndexVolumeFiles
+    # GET api/v1/volumes/:id/files
+    chemin <- paste("/api/v1/volumes/", volume_id, "/filenames", sep = "")
+    url_cible <- paste(base_url, chemin, sep = "")
+    reponse <- GET(url = url_cible, accept_json(), auth)
+    code_statut <- status_code(reponse)
+    resultat_txt <- content(reponse, "text", encoding = "UTF-8")
+    resultat <- fromJSON(resultat_txt, flatten = TRUE)
+    image_id <- as.numeric(names(resultat))
+    filename <- unlist(unname(resultat))
+    resultat <- list(image_id=image_id, filename=filename)
+    resultat_df <- as.data.frame(resultat)
+    return(resultat_df)
+  }
+
+volume_id <- 150
+mes_images <- list_image_filenames(volume_id)
+metadonnees <- fichier_metadonnees(volume_id)
+metadonnees <- metadonnees[,
+    colnames(metadonnees)=="filename" |
+    colnames(metadonnees)=="latitude" |
+    colnames(metadonnees)=="longitude"
+    ]
+
+# fusion sur "filename" (même nom de colonnes)
+temp <- (merge(mes_images, metadonnees, all.x=TRUE, all.y=FALSE))
+mes_images <- temp
+View(mes_images)
+# c'est bien de conserver la colonne image_id, car nous allons en voir besoin plus tard.
 ```
-Il reste a faire l'association des donnees avec les images pour avoir le CSV finale.
+
+## Taxon name
+
+Il reste a faire l'association des données avec les images pour avoir le CSV finale.
 Voir la solution de la section "spaghetti_dataframe" de `4.2-Import_ANDES` pour un exemple.
+
